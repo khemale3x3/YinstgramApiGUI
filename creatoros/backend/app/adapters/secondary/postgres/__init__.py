@@ -1,0 +1,1 @@
+"""PostgreSQL driven adapters (app store): connection + stores."""

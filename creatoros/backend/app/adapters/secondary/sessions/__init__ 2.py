@@ -1,0 +1,1 @@
+"""JSON file persistence for session state."""

@@ -53,6 +53,17 @@ class ScraperSqliteAdapter(DatabasePort):
                 )
                 """
             )
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS instagram_operations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    payload TEXT NOT NULL DEFAULT '{}',
+                    result TEXT NOT NULL DEFAULT '{}',
+                    status TEXT NOT NULL,
+                    error TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
     @property
     def name(self) -> str:
@@ -77,6 +88,10 @@ class ScraperSqliteAdapter(DatabasePort):
             }
         except Exception as exc:
             return {"available": False, "type": "sqlite", "path": str(self._db), "error": str(exc)}
+
+    def record_operation(self, action: str, payload: dict, result: dict | None = None, status: str = "succeeded", error: str | None = None) -> None:
+        with _connect(self._db) as conn:
+            conn.execute("INSERT INTO instagram_operations (action, payload, result, status, error) VALUES (?, ?, ?, ?, ?)", (action, json.dumps(payload), json.dumps(result or {}), status, error))
 
     def save_profile(self, username, url, profile_info, post_info, stats=None) -> bool:
         import datetime

@@ -94,6 +94,39 @@ class InstagrapiAdapter(InstagramPort):
         users = fetch(user_id, amount=int(amount))
         return [{"pk": str(user.pk), "username": user.username, "full_name": user.full_name} for user in users]
 
+    def execute_action(self, action: str, payload: dict) -> dict:
+        if action == "insights":
+            if payload.get("media_id"):
+                result = self._client.insights_media(int(payload["media_id"]))
+            else:
+                result = self._client.insights_account()
+            return {"action": action, "insights": result}
+        if action == "publish_photo":
+            media = self._client.photo_upload(payload["path"], payload.get("caption", ""))
+            return {"action": action, "media_id": str(media.pk), "code": media.code}
+        if action == "publish_video":
+            media = self._client.video_upload(payload["path"], payload.get("caption", ""))
+            return {"action": action, "media_id": str(media.pk), "code": media.code}
+        if action == "publish_album":
+            media = self._client.album_upload(payload["paths"], payload.get("caption", ""))
+            return {"action": action, "media_id": str(media.pk), "code": media.code}
+        if action == "comment":
+            comment = self._client.media_comment(payload["media_id"], payload["text"])
+            return {"action": action, "comment_id": str(comment.pk), "text": comment.text}
+        if action == "comments":
+            comments = self._client.media_comments(payload["media_id"], amount=int(payload.get("limit", 50)))
+            return {"action": action, "comments": [{"id": str(item.pk), "text": item.text, "user": item.user.username} for item in comments]}
+        if action == "direct_send":
+            thread = self._client.direct_send(payload["text"], user_ids=[int(payload["user_id"])])
+            return {"action": action, "thread_id": str(thread.thread_id)}
+        if action == "hashtag_info":
+            return {"action": action, "hashtag": self._client.hashtag_info(payload["hashtag"]).dict()}
+        if action in ("hashtag_recent", "hashtag_top"):
+            method = self._client.hashtag_medias_recent if action == "hashtag_recent" else self._client.hashtag_medias_top
+            medias = method(payload["hashtag"], amount=int(payload.get("limit", 25)))
+            return {"action": action, "media": [{"id": str(item.pk), "code": item.code, "caption": item.caption_text or ""} for item in medias]}
+        raise ValueError(f"unsupported Instagram action: {action}")
+
     @staticmethod
     def _to_post(media: Media) -> CreatorPost:
         location = getattr(media, "location", None)

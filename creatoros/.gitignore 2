@@ -1,0 +1,54 @@
+# Media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mkv
+*.webm
+
+# Databases
+*.db
+*.sqlite3
+*.sqlite
+
+# Environment
+.env
+.env.local
+
+# Sessions - these contain Instagram session auth, treat as secrets
+# sessions/*.json
+# sessions/*.session
+
+# Data
+# data/*.csv
+# data/*.json
+# data/uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

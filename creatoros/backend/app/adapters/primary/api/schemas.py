@@ -144,6 +144,9 @@ class SettingsUpdateRequest(BaseModel):
     gcs_bucket: str | None = None
     gcs_project: str | None = None
     drive_folder_id: str | None = None
+    instagram_graph_api_version: str | None = None
+    instagram_graph_business_account_id: str | None = None
+    instagram_graph_access_token: str | None = None
 
 
 # ---------------------------------------------------------------------- ingest

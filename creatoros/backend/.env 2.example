@@ -1,0 +1,51 @@
+# Copy this file to .env and adjust values. Secrets must come from the environment,
+# never from code. DB password default here is a local-dev placeholder.
+
+# API
+HOST=0.0.0.0
+PORT=8000
+DEBUG=true
+
+# CORS (comma-separated list of allowed origins)
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Behavior
+REQUEST_TIMEOUT=15
+DELAY_RANGE=1,3
+
+# Postgres app store (creatoros schema; DDL applied on boot)
+PG_ENABLED=true
+PG_HOST=localhost
+PG_PORT=5432
+PG_USER=khem
+PG_NAME=yinstagram
+PG_PASSWORD=change-me
+PG_SCHEMA=creatoros
+
+# SQL Server ingest target (optional, used by /api/database ingest)
+DB_SERVER=
+DB_NAME=CreatorsDatabase
+DB_USER=sa
+DB_PASSWORD=
+DB_TABLE=dbo.prodmauploadvakodata
+
+# S3 storage (optional; storage endpoints degrade when empty)
+S3_BUCKET=veel-data-processing
+S3_REGION=
+S3_ACCESS_KEY=
+S3_SECRET_KEY=
+
+# Admin bootstrap account + JWT
+ADMIN_EMAIL=khemale05@gmail.com
+ADMIN_PASSWORD=change-me
+JWT_SECRET=change-me-in-production
+JWT_EXPIRES_MINUTES=720
+
+# Pipeline defaults
+SCRAPER_MAX_WORKERS=8
+SCRAPER_MAX_POSTS=40
+SCRAPER_HEADLESS=true
+SCRAPER_ACTIVE_SESSIONS=5
+SCRAPER_TIMEOUT=30
+SCRAPER_TEST_MODE=false
+SCRAPER_MAX_TEST_PROFILES=5

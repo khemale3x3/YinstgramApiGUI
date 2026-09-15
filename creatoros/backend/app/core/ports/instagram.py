@@ -35,6 +35,10 @@ class InstagramPort(ABC):
         """Fetch follower or following usernames for an Instagram account."""
 
     @abstractmethod
+    def execute_action(self, action: str, payload: dict) -> dict:
+        """Execute an authenticated publishing, community, or discovery action."""
+
+    @abstractmethod
     def login(self, username: str, password: str) -> bool:
         """Authenticate and keep the session in memory."""
 

@@ -51,12 +51,15 @@ class SettingsService:
             "gcs_bucket",
             "gcs_project",
             "drive_folder_id",
+            "instagram_graph_api_version",
+            "instagram_graph_business_account_id",
+            "instagram_graph_access_token",
             "export_formats",
     }
     )
 
     SECRET_KEYS = frozenset(
-        {"admin_password", "jwt_secret", "db_password", "s3_secret_key", "s3_access_key", "pg_password"}
+        {"admin_password", "jwt_secret", "db_password", "s3_secret_key", "s3_access_key", "pg_password", "instagram_graph_access_token"}
     )
 
     def to_dict(self, include_secrets: bool = False) -> dict:
@@ -105,6 +108,11 @@ class SettingsService:
                 "gcs_project": settings.gcs_project,
                 "drive_folder_id": settings.drive_folder_id,
                 "configured": bool(settings.s3_access_key and settings.s3_secret_key),
+            },
+            "instagram_graph": {
+                "api_version": settings.instagram_graph_api_version,
+                "business_account_id": settings.instagram_graph_business_account_id,
+                "configured": bool(settings.instagram_graph_business_account_id and settings.instagram_graph_access_token),
             },
             "export_formats": list(settings.export_formats),
             "jwt_expires_minutes": settings.jwt_expires_minutes,

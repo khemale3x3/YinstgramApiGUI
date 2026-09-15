@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     gcs_bucket: str = ""
     gcs_project: str = ""
     drive_folder_id: str = ""
+    instagram_graph_api_version: str = "v23.0"
+    instagram_graph_business_account_id: str = ""
+    instagram_graph_access_token: str = ""
 
     # ------------------------------------------------------------ exporter
     export_formats: list[str] = ["json", "jsonl", "csv"]

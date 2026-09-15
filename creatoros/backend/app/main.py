@@ -36,6 +36,7 @@ from app.adapters.primary.api.routes.creators import build_router as build_creat
 from app.adapters.primary.api.routes.dashboard import build_router as build_dashboard_router
 from app.adapters.primary.api.routes.database import build_router as build_database_router
 from app.adapters.primary.api.routes.jobs import build_router as build_jobs_router
+from app.adapters.primary.api.routes.instagram import build_router as build_instagram_router
 from app.adapters.primary.api.routes.marketplace import build_router as build_marketplace_router
 from app.adapters.primary.api.routes.projects import build_router as build_projects_router
 from app.adapters.primary.api.routes.sessions import build_router as build_sessions_router
@@ -259,6 +260,7 @@ def _build_app() -> FastAPI:
         )
     )
     app.include_router(build_auth_router(auth_service, admin_service))
+    app.include_router(build_instagram_router(instagram_factory, session_store, scraper_store, require_admin, dependencies=[Depends(require_feature("publishing"))]))
     app.include_router(
         build_jobs_router(
             JobService(job_store),

@@ -91,15 +91,10 @@ FEATURES: list[FeatureFlag] = [
     FeatureFlag("analytics", "Analytics", enabled=True, group="Intelligence", roles="admin,user"),
     FeatureFlag("collections", "Collections", enabled=True, group="Intelligence", roles="admin,user"),
     FeatureFlag("notes", "Notes", enabled=True, group="Intelligence", roles="admin,user"),
-    # --------------------------------------- engagement (off unless integration supports)
-    # The instagrapi adapter (app/adapters/secondary/instagrapi/client.py) only
-    # reads public/authorized data: profile info, media, user search, session
-    # validation. Direct-messaging and publishing are NOT implemented by the
-    # adapter, so they stay disabled — the menu is hidden and routes 403 until
-    # an upload/DM-capable integration is wired in.
+    # --------------------------------------- authenticated Instagram actions
     FeatureFlag("engagement", "Engagement", enabled=True, group="Engagement", roles="admin,user"),
-    FeatureFlag("direct", "Direct Messages", enabled=False, group="Engagement", roles="admin,user"),
-    FeatureFlag("publishing", "Publishing", enabled=False, group="Engagement", roles="admin,user"),
+    FeatureFlag("direct", "Direct Messages", enabled=True, group="Engagement", roles="admin,user"),
+    FeatureFlag("publishing", "Publishing", enabled=True, group="Engagement", roles="admin,user"),
     # ---------------------------------------------------------------- accounts
     FeatureFlag("accounts", "Accounts", enabled=True, group="Accounts", roles="admin,user"),
     FeatureFlag("sessions", "Sessions", enabled=True, group="Accounts", roles="admin,user"),

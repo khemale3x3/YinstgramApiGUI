@@ -344,6 +344,16 @@ export default function SettingsPage() {
           </div>
         </Collapsible>
 
+        <Collapsible title="Instagram Graph API (analytics)" sectionKey="graph" collapsed={collapsed.graph} onToggle={toggleSection}>
+          <p className="mb-4 text-xs text-gray-500">Optional Business/Creator credentials for reach, impressions, follower demographics, and Insights. The access token is stored in backend/.env and never displayed.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input value={String(patch.instagram_graph_api_version ?? app.instagram_graph.api_version)} onChange={(v) => set("instagram_graph_api_version", v)} placeholder="Graph API version" />
+            <Input value={String(patch.instagram_graph_business_account_id ?? app.instagram_graph.business_account_id)} onChange={(v) => set("instagram_graph_business_account_id", v)} placeholder="Business/Creator account ID" />
+            <Input value={String(patch.instagram_graph_access_token ?? "")} onChange={(v) => set("instagram_graph_access_token", v)} placeholder="Graph access token" type="password" />
+          </div>
+          <p className="mt-3 text-xs text-gray-500">Status: <span className={app.instagram_graph.configured ? "text-emerald-400" : "text-amber-400"}>{app.instagram_graph.configured ? "configured" : "not configured"}</span></p>
+        </Collapsible>
+
         <Collapsible title="Rights & access" sectionKey="rights" collapsed={collapsed.rights} onToggle={toggleSection}>
           <p className="mb-3 text-xs text-gray-500">
             Every feature is enforced on the backend (403 before a route runs) and

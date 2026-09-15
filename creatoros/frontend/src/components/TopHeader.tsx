@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
 export default function TopHeader() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -21,7 +23,7 @@ export default function TopHeader() {
 
   function submitSearch() {
     const value = query.trim();
-    if (value) window.location.assign(`/discovery?query=${encodeURIComponent(value)}`);
+    if (value) router.push(`/discovery?query=${encodeURIComponent(value)}`);
   }
 
   return (

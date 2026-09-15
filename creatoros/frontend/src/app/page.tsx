@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import PostThumb from "@/components/PostThumb";
 import StatCard from "@/components/StatCard";
 import {
   adminMe,
+  createJob,
   databaseStatus,
   formatNumber,
   formatWhen,
@@ -14,6 +16,7 @@ import {
   getDashboard,
   isAdmin,
   listJobs,
+  listProjects,
   type CreatorPost,
   type CreatorProfile,
   type DashboardSnapshot,
@@ -22,6 +25,7 @@ import {
   type Job,
   type MenuItem,
   type MenuTree,
+  type Project,
 } from "@/lib/api";
 
 const EMPTY: DashboardSnapshot = {
@@ -45,6 +49,8 @@ export default function Home() {
 
 // ------------------------------------------------------------------ admin
 function AdminHome() {
+  const searchParams = useSearchParams();
+  const workspace = searchParams.get("workspace") ?? "dashboard:overview";
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(EMPTY);
   const [db, setDb] = useState<DatabaseStatus | null>(null);
   const [error, setError] = useState("");
@@ -54,6 +60,10 @@ function AdminHome() {
   const [posts, setPosts] = useState<CreatorPost[]>([]);
   const [searching, setSearching] = useState(false);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [triggerProject, setTriggerProject] = useState("");
+  const [triggerKind, setTriggerKind] = useState<"scrape" | "analyze" | "full">("scrape");
+  const [triggerStatus, setTriggerStatus] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -69,6 +79,13 @@ function AdminHome() {
       .catch(() => {});
     listJobs(8)
       .then((d) => alive && setRecentJobs(d.jobs))
+      .catch(() => {});
+    listProjects()
+      .then((d) => {
+        if (!alive) return;
+        setProjects(d.projects);
+        setTriggerProject(d.projects[0]?.name ?? "");
+      })
       .catch(() => {});
     return () => {
       alive = false;
@@ -96,6 +113,20 @@ function AdminHome() {
     }
   }
 
+  async function triggerPipeline() {
+    if (!triggerProject) {
+      setTriggerStatus("Create or select a project before triggering a job.");
+      return;
+    }
+    setTriggerStatus("");
+    try {
+      await createJob({ kind: triggerKind, project: triggerProject });
+      setTriggerStatus(`${triggerKind} job queued for ${triggerProject}.`);
+    } catch (e) {
+      setTriggerStatus(e instanceof Error ? e.message : "Unable to queue job");
+    }
+  }
+
   const { stats, top_creators, recent_activity, growth } = snapshot;
 
   return (
@@ -103,7 +134,7 @@ function AdminHome() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-400">KreatOS control center</p>
+          <p className="mt-1 text-sm text-gray-400">KreatOS control center · {workspaceLabel(workspace)}</p>
         </div>
         <Link
           href="/creators"
@@ -114,6 +145,17 @@ function AdminHome() {
       </div>
 
       {error && <div className="mt-6"><ErrText message={error} /></div>}
+
+      <DashboardWorkspace
+        workspace={workspace}
+        projects={projects}
+        project={triggerProject}
+        setProject={setTriggerProject}
+        kind={triggerKind}
+        setKind={setTriggerKind}
+        onTrigger={() => void triggerPipeline()}
+        message={triggerStatus}
+      />
 
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard title="Creators" value={formatNumber(stats.creators)} />
@@ -451,6 +493,57 @@ function dotFor(status: string) {
     default:
       return "#6b7280";
   }
+}
+
+function workspaceLabel(workspace: string) {
+  return {
+    "dashboard:overview": "Overview",
+    "dashboard:activity": "Activity",
+    "dashboard:health": "System Health",
+    "dashboard:jobs": "Jobs",
+    "dashboard:alerts": "Alerts",
+  }[workspace] ?? "Overview";
+}
+
+function DashboardWorkspace({
+  workspace,
+  projects,
+  project,
+  setProject,
+  kind,
+  setKind,
+  onTrigger,
+  message,
+}: {
+  workspace: string;
+  projects: Project[];
+  project: string;
+  setProject: (value: string) => void;
+  kind: "scrape" | "analyze" | "full";
+  setKind: (value: "scrape" | "analyze" | "full") => void;
+  onTrigger: () => void;
+  message: string;
+}) {
+  const label = workspaceLabel(workspace);
+  const isJobs = workspace === "dashboard:jobs";
+  const isAlerts = workspace === "dashboard:alerts";
+  return (
+    <section className="mt-6 rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">Dashboard workspace</p>
+          <h2 className="mt-1 text-lg font-semibold text-white">{label}</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {isJobs ? "Trigger and monitor scrape, analysis, and full pipeline jobs." : isAlerts ? "Review failed jobs and operational warnings from the live job store." : `Review ${label.toLowerCase()} data from the connected application services.`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2"><Link href="/jobs" className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800">Open Jobs</Link><Link href="/monitoring?workspace=automation%3Ascheduled" className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800">Schedule</Link><Link href="/settings" className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-gray-800">Configure</Link></div>
+      </div>
+      {(isJobs || workspace === "dashboard:overview") && <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"><select value={project} onChange={(event) => setProject(event.target.value)} className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-sm text-white"><option value="">Select project</option>{projects.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select><select value={kind} onChange={(event) => setKind(event.target.value as "scrape" | "analyze" | "full")} className="rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-sm text-white"><option value="scrape">Scrape</option><option value="analyze">Analyze</option><option value="full">Full pipeline</option></select><button type="button" onClick={onTrigger} disabled={!project} className="rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50">Trigger job</button></div>}
+      {message && <p className="mt-3 rounded-lg border border-blue-900 bg-blue-950/30 p-3 text-sm text-blue-300">{message}</p>}
+      {isAlerts && <div className="mt-5 rounded-lg border border-amber-900/60 bg-amber-950/20 p-4 text-sm text-amber-200">Failed and cancelled jobs are listed in Jobs, where they can be retried or cancelled.</div>}
+    </section>
+  );
 }
 
 function GrowthChart({ data }: { data: Array<{ date: string; count: number }> }) {

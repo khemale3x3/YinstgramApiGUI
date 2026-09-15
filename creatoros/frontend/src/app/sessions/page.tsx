@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Btn, Card, Empty, Err, Loader, PageHeader, StatusBadge } from "@/components/ui";
 import {
   getSessions,
@@ -10,6 +12,20 @@ import {
 } from "@/lib/api";
 
 export default function SessionsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedWorkspace = searchParams.get("workspace") ?? "sessions:active";
+  const workspaces = [
+    ["sessions:active", "Active Sessions"],
+    ["sessions:files", "Session Files"],
+    ["sessions:validate", "Session Validation"],
+    ["sessions:refresh", "Session Refresh"],
+    ["sessions:login", "Login"],
+    ["sessions:2fa", "2FA"],
+    ["sessions:challenge", "Challenge Status"],
+    ["sessions:health", "Session Health"],
+  ] as const;
   const [counts, setCounts] = useState<SessionCounts | null>(null);
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +82,19 @@ export default function SessionsPage() {
         subtitle="Instagram cookie sessions and instagrapi JSON sessions used for scraping."
       />
 
+      <div className="mb-6 flex flex-wrap gap-2 border-b border-gray-800 pb-px">
+        {workspaces.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => router.replace(`${pathname}?workspace=${encodeURIComponent(key)}`, { scroll: false })}
+            className={requestedWorkspace === key ? "rounded-t-lg border-b-2 border-white px-3 py-2 text-sm font-medium text-white" : "rounded-t-lg border-b-2 border-transparent px-3 py-2 text-sm text-gray-500 hover:text-gray-300"}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {error && <div className="mb-6"><Err message={error} /></div>}
       {notice && (
         <div className="mb-6 rounded-lg border border-emerald-800 bg-emerald-950/50 p-3 text-sm text-emerald-300">
@@ -80,9 +109,9 @@ export default function SessionsPage() {
         <Stat label="Instagrapi" value={counts?.instagrapi ?? 0} />
       </div>
 
-      <Card title="Import sessions from .env" className="mb-8">
+      <Card title={requestedWorkspace === "sessions:files" ? "Import sessions from .env" : `${workspaces.find(([key]) => key === requestedWorkspace)?.[1] ?? "Active Sessions"} configuration`} className="mb-8">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="flex-1 text-sm text-gray-400">
+            <p className="flex-1 text-sm text-gray-400">
             Upload a file containing <code className="text-gray-300">INSTA_SESSION_1=...</code> and{" "}
             <code className="text-gray-300">INSTA_ACCOUNT_1=user:pass</code> entries. The first{" "}
             <span className="text-gray-300">active-sessions</span> entries form the active pool; the rest
@@ -104,6 +133,13 @@ export default function SessionsPage() {
           />
         </div>
       </Card>
+
+      {requestedWorkspace !== "sessions:files" && requestedWorkspace !== "sessions:active" && (
+        <Card title="Session workflow" className="mb-8">
+          <p className="text-sm text-gray-400">This workspace uses the configured session pool. Import or add a session, then use validation and health views to verify availability before scraping.</p>
+          <div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => void refresh()} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200">Refresh status</button><Link href="/settings?workspace=settings%3Ainstagram" className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Configure Instagram</Link></div>
+        </Card>
+      )}
 
       {sessions.length === 0 ? (
         <Empty label="No sessions configured yet." />

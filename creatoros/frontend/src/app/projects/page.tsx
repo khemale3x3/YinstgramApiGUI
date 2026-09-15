@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Btn, Card, Empty, Err, Input, PageHeader, Loader, StatusBadge } from "@/components/ui";
 import {
   addProjectUrls,
@@ -228,7 +229,7 @@ export default function ProjectsPage() {
                   </p>
                 </div>
                 <p className="mt-3 text-xs text-gray-500">
-                  Runs are queued as background <a href="/jobs" className="text-blue-400 hover:underline">jobs</a>;
+                  Runs are queued as background <Link href="/jobs" className="text-blue-400 hover:underline">jobs</Link>;
                   progress is visible on the Jobs page.
                 </p>
               </Card>

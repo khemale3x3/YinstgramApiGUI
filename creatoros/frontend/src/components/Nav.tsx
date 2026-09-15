@@ -48,9 +48,11 @@ export default function Nav() {
 
   return (
     <aside className="sticky top-0 flex h-screen flex-col border-r border-slate-800 bg-[#07111f] w-60 shrink-0">
-      <div className="px-6 py-6 border-b border-gray-800">
-        <p className="text-lg font-bold tracking-tight">KreatOS</p>
-        <p className="text-xs text-gray-500 mt-1">Instagram intelligence</p>
+      <div className="border-b border-gray-800 px-6 py-6">
+        <Link href="/" className="block rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50">
+          <p className="text-lg font-bold tracking-tight">KreatOS</p>
+          <p className="mt-1 text-xs text-gray-500">Instagram intelligence</p>
+        </Link>
       </div>
 
       <nav className="flex flex-col gap-3 p-3 overflow-y-auto">

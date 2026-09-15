@@ -1,12 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { Card, Err, Input, PageHeader, Btn, Loader } from "@/components/ui";
+import { Err, Input, PageHeader, Btn, Loader } from "@/components/ui";
 import {
   adminFeatures,
+  adminSetFeature,
   adminMe,
+  databaseStatus,
   getSettings,
   updateSettings,
+  storageStatus,
   type FeatureFlag,
   type Settings,
 } from "@/lib/api";
@@ -19,6 +23,9 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [features, setFeatures] = useState<FeatureFlag[]>([]);
   const [myRole, setMyRole] = useState("admin");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
 
   useEffect(() => {
     getSettings().then(setApp).catch((e) => setError(e.message));
@@ -32,6 +39,36 @@ export default function SettingsPage() {
 
   function set(key: string, value: unknown) {
     setPatch((p) => ({ ...p, [key]: value }));
+  }
+
+  function toggleSection(key: string) {
+    setCollapsed((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  async function testConnections() {
+    setTesting(true);
+    setTestMessage("");
+    try {
+      const [db, storageStatusResult] = await Promise.all([databaseStatus(), storageStatus()]);
+      setTestMessage(`Database: ${db.local.available ? "connected" : "unavailable"}. SQL Server: ${db.remote.available ? "connected" : "unavailable"}. Storage: ${storageStatusResult.available ? "connected" : "unavailable"}.`);
+    } catch (e) {
+      setTestMessage(e instanceof Error ? e.message : "Connection test failed");
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function toggleFeature(feature: FeatureFlag) {
+    setBusy(true);
+    setError("");
+    try {
+      const updated = await adminSetFeature(feature.key, !feature.enabled);
+      setFeatures((current) => current.map((item) => item.key === updated.key ? updated : item));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update feature access");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function save() {
@@ -65,7 +102,10 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-      <PageHeader title="Settings" subtitle="Runtime configuration — saved to backend/.env on change." />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader title="Settings" subtitle="Runtime configuration — saved to backend/.env on change." />
+        <div className="flex gap-2"><Btn onClick={() => void testConnections()} disabled={testing}>{testing ? "Testing…" : "Test connections"}</Btn><Btn primary onClick={save} disabled={busy || Object.keys(patch).length === 0}>{busy ? "Saving…" : "Save changes"}</Btn></div>
+      </div>
 
       {error && <div className="mb-6"><Err message={error} /></div>}
       {saved && (
@@ -73,9 +113,10 @@ export default function SettingsPage() {
           Settings saved.
         </div>
       )}
+      {testMessage && <div className="mb-6 rounded-lg border border-blue-900 bg-blue-950/30 p-3 text-sm text-blue-300">{testMessage}</div>}
 
       <div className="grid gap-6">
-        <Card title="General">
+        <Collapsible title="General" sectionKey="general" collapsed={collapsed.general} onToggle={toggleSection}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               value={String(app.admin_email)}
@@ -99,9 +140,9 @@ export default function SettingsPage() {
               placeholder="Export formats (json, jsonl, csv)"
             />
           </div>
-        </Card>
+        </Collapsible>
 
-        <Card title="Scraper (Selenium + sessions)">
+        <Collapsible title="Scraper (Selenium + sessions)" sectionKey="scraper" collapsed={collapsed.scraper} onToggle={toggleSection}>
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
               value={String(scraper.max_workers)}
@@ -146,9 +187,9 @@ export default function SettingsPage() {
               onChange={(v) => setScraper("test_mode", v)}
             />
           </div>
-        </Card>
+        </Collapsible>
 
-        <Card title="PostgreSQL (app store)">
+        <Collapsible title="PostgreSQL (app store)" sectionKey="postgres" collapsed={collapsed.postgres} onToggle={toggleSection}>
           <p className="mb-4 text-xs text-gray-500">
             KreatOS runtime database — jobs, projects, users, features, menus,
             audit trail and scraped profiles. Schema is auto-created on boot from
@@ -203,9 +244,9 @@ export default function SettingsPage() {
               {postgres.configured ? "configured" : "not configured (set PG_PASSWORD in .env)"}
             </span>
           </p>
-        </Card>
+        </Collapsible>
 
-        <Card title="SQL Server ingest">
+        <Collapsible title="SQL Server ingest" sectionKey="sqlserver" collapsed={collapsed.sqlserver} onToggle={toggleSection}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               value={String(patch.db_server ?? app.database.server ?? "")}
@@ -244,9 +285,9 @@ export default function SettingsPage() {
               {database.configured ? "configured" : "not configured (set DB_PASSWORD in .env)"}
             </span>
           </p>
-        </Card>
+        </Collapsible>
 
-        <Card title="S3 storage">
+        <Collapsible title="S3 storage" sectionKey="s3" collapsed={collapsed.s3} onToggle={toggleSection}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               value={String(patch.s3_bucket ?? app.storage.bucket ?? "")}
@@ -275,9 +316,9 @@ export default function SettingsPage() {
               {storage.configured ? "configured" : "not configured (set S3 keys in .env)"}
             </span>
           </p>
-        </Card>
+        </Collapsible>
 
-        <Card title="Scraped data destination">
+        <Collapsible title="Scraped data destination" sectionKey="destination" collapsed={collapsed.destination} onToggle={toggleSection}>
           <p className="mb-4 text-xs text-gray-500">
             Choose where scraper artifacts should be saved. Local and S3 are available now;
             GCP and Drive fields are saved for their provider adapters.
@@ -301,9 +342,9 @@ export default function SettingsPage() {
             <Input value={String(patch.gcs_project ?? storage.gcs_project)} onChange={(v) => set("gcs_project", v)} placeholder="GCP project ID" />
             <Input value={String(patch.drive_folder_id ?? storage.drive_folder_id)} onChange={(v) => set("drive_folder_id", v)} placeholder="Google Drive folder ID" />
           </div>
-        </Card>
+        </Collapsible>
 
-        <Card title="Rights & access">
+        <Collapsible title="Rights & access" sectionKey="rights" collapsed={collapsed.rights} onToggle={toggleSection}>
           <p className="mb-3 text-xs text-gray-500">
             Every feature is enforced on the backend (403 before a route runs) and
             mirrored here from the feature table — view only.
@@ -346,12 +387,9 @@ export default function SettingsPage() {
                               : "text-gray-600"
                           }
                         >
-                          {f.enabled && roles.includes(myRole)
-                            ? "enabled"
-                            : !f.enabled
-                              ? "disabled"
-                              : "no access"}
+                          {f.enabled && roles.includes(myRole) ? "enabled" : !f.enabled ? "disabled" : "no access"}
                         </span>
+                        <button type="button" onClick={() => void toggleFeature(f)} disabled={busy} className="ml-3 rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-300 hover:bg-gray-800 disabled:opacity-50">{f.enabled ? "Disable" : "Enable"}</button>
                       </td>
                     </tr>
                   );
@@ -366,9 +404,9 @@ export default function SettingsPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </Collapsible>
 
-        <Card title="System">
+        <Collapsible title="System" sectionKey="system" collapsed={collapsed.system} onToggle={toggleSection}>
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <Row label="Application" value={app.app_name} />
             <Row label="Version" value={app.app_version} />
@@ -382,13 +420,8 @@ export default function SettingsPage() {
               value={app.scraper.delay_range.join(" – ")}
             />
           </dl>
-        </Card>
+        </Collapsible>
 
-        <div className="flex justify-end">
-          <Btn primary onClick={save} disabled={busy || Object.keys(patch).length === 0}>
-            {busy ? "Saving…" : "Save changes"}
-          </Btn>
-        </div>
       </div>
     </div>
   );
@@ -405,6 +438,18 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-gray-500">{label}</dt>
       <dd className="truncate font-mono text-xs text-gray-200">{value}</dd>
     </div>
+  );
+}
+
+function Collapsible({ title, sectionKey, collapsed, onToggle, children }: { title: string; sectionKey: string; collapsed?: boolean; onToggle: (key: string) => void; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-gray-800 bg-gray-900/50">
+      <button type="button" onClick={() => onToggle(sectionKey)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-gray-900/70">
+        <span className="text-sm font-semibold text-gray-200">{title}</span>
+        <span className={`text-gray-500 transition-transform ${collapsed ? "" : "rotate-180"}`}>▾</span>
+      </button>
+      {!collapsed && <div className="border-t border-gray-800 p-5">{children}</div>}
+    </section>
   );
 }
 
